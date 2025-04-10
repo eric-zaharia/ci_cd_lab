@@ -1,3 +1,4 @@
+
 name: Build CI/CD
 
 on:
@@ -42,4 +43,41 @@ jobs:
         run: go build -o myapp
     if: ${{ success() }}
     needs: test
+
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    needs: compile
+    if: success()
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up the Go environment (Go 1.22)
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      # Step 3: Log in to GitHub Container Registry (GHCR) using GitHub Actions token
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: eric-zaharia             # GitHub username (actor triggering the workflow)
+          password: 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     # Automatically provided GitHub token
+
+      # Step 4: Build the Docker image and tag it with the repository name and 'latest'
+      - name: Build Docker image
+        run: docker build -t ghcr.io/ci_cd_lab:latest .
+
+      # Step 5: Push the Docker image to GitHub Container Registry
+      - name: Push Docker image
+        run: docker push ghcr.io/ci_cd_lab:latest
 
